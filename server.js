@@ -16,32 +16,47 @@ app.set('port', port);
 const server = http.createServer(app);
 
 // TODO: Use your MongoDB Connection String here
-const uri = "mongodb+srv://admin:supersecret1@cluster0.gdnpu.mongodb.net/?maxPoolSize=20&w=majority"; 
+const uri = "mongodb+srv://admin:supersecret1@cluster0.gdnpu.mongodb.net/?maxPoolSize=20&w=majority";
 
-// Create the client
+
+// Create the client and connect to the database
+let database;
 const client = new MongoClient(uri);
+client.connect((error, db) => {
+    if (error || !db) {
+        console.log("Could not connect to MongoDB:")
+        console.log(error.message);
+    }
+    else {
+        database = db.db('music');
+        console.log("Successfully connected to MongoDB.");
+    }
+})
 
-//////////////////////////////////////
-//// ENDPOINTS ///////////////////////
-//////////////////////////////////////
+//##################################################################################################
+// ENDPOINTS 
+//##################################################################################################
 
+//--------------------------------------------------------------------------------------------------
+// Welcome message
+//--------------------------------------------------------------------------------------------------
 app.get('/api', async (req, res) => {
     res.send("Welcome to the Music Database");
 })
 
-
-// GET /api/albums
+//--------------------------------------------------------------------------------------------------
+// Get all albums
+//--------------------------------------------------------------------------------------------------
 app.get('/api/albums', async (req, res) => {
     try {
-        await client.connect();
-        const database = client.db('music');
         const collection = database.collection('albums');
 
         // You can specify a query/filter here
         // See https://www.mongodb.com/docs/drivers/node/current/fundamentals/crud/query-document/
         const query = {};
+        // Example: Filter for a label, e.g. http://localhost:3001/api/albums?label=Columbia
         if (req.query.label) {
-            query.sender = req.query.label;
+            query.label = req.query.label;
         }
 
         // Get all objects that match the query
@@ -49,16 +64,70 @@ app.get('/api/albums', async (req, res) => {
         res.send(result);
     } catch (error) {
         res.status(500).send({ error: error.message });
-    } finally {
-        await client.close();
     }
 })
 
-// GET /api/artists
+//--------------------------------------------------------------------------------------------------
+// Get an album by its id
+//--------------------------------------------------------------------------------------------------
+app.get('/api/albums/:id', async (req, res) => {
+
+    // read the path parameter :id
+    let id = req.params.id;
+
+    try {
+        const collection = database.collection('albums');
+        const query = { _id: ObjectId(id) }; // filter by id
+        const result = await collection.findOne(query);
+
+        if (!result) {
+            let responseBody = {
+                status: "No object with id " + id
+            }
+            res.status(404).send(responseBody);
+        }
+        else {
+            res.send(result);
+        }
+    } catch (error) {
+        res.status(500).send({ error: error.message });
+    }
+})
+
+//--------------------------------------------------------------------------------------------------
+// Update an album
+//--------------------------------------------------------------------------------------------------
+app.put('/api/albums/:id', async (req, res) => {
+
+    // read the path parameter :id
+    let id = req.params.id;
+    let album = req.body;
+    delete album._id; // delete the _id from the object, because the _id cannot be updated
+
+    try {
+        const collection = database.collection('albums');
+        const query = { _id: ObjectId(id) }; // filter by id
+        const result = await collection.updateOne(query, { $set: album });
+
+        if (result.matchedCount === 0) {
+            let responseBody = {
+                status: "No object with id " + id
+            }
+            res.status(404).send(responseBody);
+        }
+        else {
+            res.send({ status: "Object with id " + id + " has been updated." });
+        }
+    } catch (error) {
+        res.status(500).send({ error: error.message });
+    }
+})
+
+//--------------------------------------------------------------------------------------------------
+// Get all artists
+//--------------------------------------------------------------------------------------------------
 app.get('/api/artists', async (req, res) => {
     try {
-        await client.connect();
-        const database = client.db('music');
         const collection = database.collection('artists');
 
         // You can specify a query/filter here
@@ -70,21 +139,18 @@ app.get('/api/artists', async (req, res) => {
         res.send(result);
     } catch (error) {
         res.status(500).send({ error: error.message });
-    } finally {
-        await client.close();
     }
 })
 
-
-// GET /api/artists/:id
+//--------------------------------------------------------------------------------------------------
+// Get an artist by their id
+//--------------------------------------------------------------------------------------------------
 app.get('/api/artists/:id', async (req, res) => {
 
     // read the path parameter :id
     let id = req.params.id;
 
     try {
-        await client.connect();
-        const database = client.db('music');
         const collection = database.collection('artists');
         const query = { _id: ObjectId(id) }; // filter by id
         const result = await collection.findOne(query);
@@ -100,18 +166,15 @@ app.get('/api/artists/:id', async (req, res) => {
         }
     } catch (error) {
         res.status(500).send({ error: error.message });
-    } finally {
-        await client.close();
     }
-
 })
 
-// POST /api/artists
+//--------------------------------------------------------------------------------------------------
+// Create a new artist
+//--------------------------------------------------------------------------------------------------
 app.post('/api/artists', async (req, res) => {
 
     try {
-        await client.connect();
-        const database = client.db('messageboard');
         const collection = database.collection('artists');
 
         var artist = {
@@ -123,39 +186,10 @@ app.post('/api/artists', async (req, res) => {
         res.status(201).send({ _id: result.insertedId });
     } catch (error) {
         res.status(500).send({ error: error.message });
-    } finally {
-        await client.close();
     }
 })
 
-/* // DELETE /api/messages
-app.delete('/api/messages/:id', async (req, res) => {
-    let id = req.params.id;
-
-    try {
-        await client.connect();
-        const database = client.db('messageboard');
-        const messages = database.collection('messages');
-        const query = { _id: ObjectId(id) }; // filter by id
-        const result = await messages.deleteOne(query);
-
-        if (result.deletedCount === 0) {
-            let responseBody = {
-                status: "No message with id " + id
-            }
-            res.status(404).send(responseBody);
-        }
-        else {
-            let responseBody = {
-                status: "Message with id " + id + " has been successfully deleted."
-            }
-            res.send(responseBody);
-        }
-    } catch (error) {
-        res.status(500).send({ error: error.message });
-    } finally {
-        await client.close();
-    }
-}) */
-
+//--------------------------------------------------------------------------------------------------
+// Start the server
+//--------------------------------------------------------------------------------------------------
 server.listen(port, () => console.log("app listening on port " + port));
