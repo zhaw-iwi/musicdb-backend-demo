@@ -16,7 +16,7 @@ app.set('port', port);
 const server = http.createServer(app);
 
 // TODO: Use your MongoDB Connection String here
-const uri = "mongodb+srv://admin:supersecret1@cluster0.gdnpu.mongodb.net/?maxPoolSize=20&w=majority";
+const uri = "mongodb+srv://<username>:<password>@cluster0.gdnpu.mongodb.net/?maxPoolSize=20&w=majority";
 
 
 // Create the client and connect to the database
