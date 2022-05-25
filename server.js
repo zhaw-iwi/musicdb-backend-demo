@@ -189,6 +189,36 @@ app.post('/api/artists', async (req, res) => {
 })
 
 //--------------------------------------------------------------------------------------------------
+// Delete an existing artist
+//--------------------------------------------------------------------------------------------------
+app.delete('/api/artists/:id', async (req, res) => {
+
+    // read the path parameter :id
+    let id = req.params.id;
+
+    try {
+        const collection = database.collection('artists');
+        const query = { _id: ObjectId(id) }; // filter by id
+        const result = await collection.deleteOne(query);
+
+        if (result.deletedCount === 0) {
+            let responseBody = {
+                status: "No object with id " + id
+            }
+            res.status(404).send(responseBody);
+        }
+        else {
+            let responseBody = {
+                status: "Object with id " + id + " has been successfully deleted."
+            }
+            res.send(responseBody);
+        }
+    } catch (error) {
+        res.status(500).send({ error: error.message });
+    }
+})
+
+//--------------------------------------------------------------------------------------------------
 // Start the server
 //--------------------------------------------------------------------------------------------------
 server.listen(port, () => console.log("app listening on port " + port));
