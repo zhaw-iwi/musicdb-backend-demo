@@ -4,6 +4,7 @@ const { MongoClient, ObjectId } = require('mongodb'); // See https://www.mongodb
 const cors = require('cors')
 const http = require('http');
 const bodyParser = require('body-parser');
+const config = require('./config');
 
 // Set up App
 const app = express();
@@ -15,12 +16,10 @@ app.set('port', port);
 
 const server = http.createServer(app);
 
-// TODO: Use your MongoDB Connection String here
-const uri = "...";
 
 // Create the client and connect to the database
 let database;
-const client = new MongoClient(uri);
+const client = new MongoClient(config.mongodb_connection_string);
 client.connect((error, db) => {
     if (error || !db) {
         console.log("Could not connect to MongoDB:")
