@@ -26,7 +26,7 @@ client.connect((error, db) => {
         console.log(error.message);
     }
     else {
-        database = db.db('music');
+        database = db.db('MusicDB');
         console.log("Successfully connected to MongoDB.");
     }
 })
@@ -39,7 +39,7 @@ client.connect((error, db) => {
 // Welcome message
 //--------------------------------------------------------------------------------------------------
 app.get('/api', async (req, res) => {
-    res.send("Welcome to the Music Database");
+    res.send("Welcome to the Music Database API");
 })
 
 //--------------------------------------------------------------------------------------------------
